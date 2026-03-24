@@ -6,6 +6,10 @@ export const webSearchToolset = {
 	webSearch: webSearch(),
 } as ToolSet;
 
+const tavilyClient = tavily({
+	apiKey: process.env.TAVILY_API_KEY ?? "",
+});
+
 type TavilySearchInput = {
 	query: string;
 	maxResults?: number;
@@ -48,22 +52,25 @@ export const tavilyWebSearchToolset: ToolSet = {
 			searchDepth = "basic",
 			topic = "general",
 		}: TavilySearchInput) => {
-			const client = tavily({
-				apiKey: process.env.TAVILY_API_KEY,
-			});
-			const response = await client.search(query, {
-				maxResults,
-				searchDepth,
-				topic,
-			});
-			return {
-				results: response.results.map((result) => ({
-					title: result.title,
-					url: result.url,
-					content: result.content,
-					score: result.score,
-				})),
-			};
+			try {
+				const response = await tavilyClient.search(query, {
+					maxResults,
+					searchDepth,
+					topic,
+				});
+				return {
+					results: response.results.map((result) => ({
+						title: result.title,
+						url: result.url,
+						content: result.content,
+						score: result.score,
+					})),
+				};
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : "Unknown error";
+				return { results: [], error: message };
+			}
 		},
 	},
 };
